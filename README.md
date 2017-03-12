@@ -35,7 +35,7 @@ var a = {
   onclick: (e) => e.preventDefault()
 };
 
-// associate the link to an object of info
+// associate the link to an object
 // or simply use viperHTML.wire();
 var link = viperHTML.bind(a);
 
@@ -75,6 +75,18 @@ second call: cached update: 0.137ms
 a thousand of cached update calls: 30.167ms
 a thousand of uncached upgrade + update calls: 39.001ms
 ```
+
+
+### The Extra viperHTML Feature: Asynchronous Partial Output
+
+Client and server inevitably have different needs,
+and the ability to serve chunks on demand, instead of whole pages at once,
+is once of these very important differences that wouldn't make much sense on the client side,
+due its natural ability to re-update a view with new content whenever that happens.
+
+Since wires and bound references are useful to obtain best performance,
+`viperHTML` accepts a callback as bound context.
+
 
 
 ### Usage Example

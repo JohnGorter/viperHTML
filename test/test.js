@@ -155,6 +155,31 @@ tressa.async(done => {
 });
 
 tressa.async(done => {
+  var chunks = [];
+  (viperHTML.bind(chunk => {
+    chunks.push(chunk);
+  })`
+  <a
+    href="${'viper.com'}"
+    onclick="${null}"
+  >Click Me</a>
+  `).then(all => {
+    tressa.assert(
+    `
+  <a
+    href="viper.com"
+    onclick=""
+  >Click Me</a>
+  ` === all.join(''),
+    'wired callback hooked through Promises'
+  );
+    tressa.assert(
+      chunks.join('') === all.join(''),
+      'all chunks notified'
+    );
+    done();
+  });
+}).then(() => tressa.async(done => {
 
   tressa.log('');
   tressa.log('## basic benchmark');
@@ -175,7 +200,6 @@ tressa.async(done => {
   };
 
   var link = viperHTML.bind(a);
-  var out = '';
 
   var benchName = 'first call: upgrade + update';
   console.time(benchName);
@@ -202,6 +226,6 @@ tressa.async(done => {
   console.timeEnd(benchName);
 
   done();
-});
+}));
 
 

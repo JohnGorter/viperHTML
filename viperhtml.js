@@ -14,7 +14,7 @@
 function viperHTML(statics) {
   var viper = vipers.get(this);
   return viper && viper.s === statics ?
-    update.apply(viper, arguments) :
+    (viper.p ? chunks : update).apply(viper, arguments) :
     upgrade.apply(this, arguments);
 }
 
@@ -29,7 +29,7 @@ viperHTML.wire = function wire(object) {
   return arguments.length < 1 ?
     viperHTML.bind({}) :
     (wires.get(object) || (
-      wires.set(object, wire()),
+      wires.set(object, viperHTML.bind(object)),
       wire(object)
     ));
 };
@@ -64,7 +64,7 @@ function getUpdateForAttribute(copies, i) {
   var name = copies[i - 1].replace(ATTRIBUTE_NAME, '$1');
   return SPECIAL_ATTRIBUTE.test(name) ?
     (ATTRIBUTE_EVENT.test(name) ?
-      updateEvent(name) :
+      updateEvent() :
       updateBoolean(name, copies, i)) :
     escape;
 }
@@ -80,11 +80,10 @@ function updateBoolean(name, copies, i) {
   };
 }
 
-
 // return the right callback to invoke an event
 // stringifying the callback and invoking it
 // to simulate a proper DOM behavior
-function updateEvent(name) {
+function updateEvent() {
   return function (value) {
     var isFunction = typeof value === 'function';
     return isFunction ?
@@ -117,6 +116,31 @@ function update() {
   return out.join('');
 }
 
+// resolves through promises
+function chunks() {
+  for (var
+    c = this.c,
+    p = this.p,
+    u = this.u,
+    out = [resolveChunk(p, String, c[0], '')],
+    i = 1,
+    length = arguments.length;
+    i < length; i++
+  ) {
+    out[i] = resolveChunk(p, u[i - 1], arguments[i], c[i]);
+  }
+  return Promise.all(out);
+}
+
+// return a promise that will invoke each resolved chunk
+function resolveChunk(update, callback, promise, suffix) {
+  return Promise.resolve(promise).then(function (result) {
+    var value = callback(result) + suffix;
+    update(value);
+    return value;
+  });
+}
+
 // but the first time, it needs to be setup.
 // From now on, only update(statics) will be called
 // unless this context won't be used for other renderings.
@@ -124,7 +148,13 @@ function upgrade(statics) {
   for (var
     updates = [],
     copies = updates.slice.call(statics),
-    viper = {s: statics, u: updates, c: copies},
+    viper = {
+      s: statics,
+      u: updates,
+      c: copies,
+      p: typeof this === 'function' ?
+        this : null
+    },
     i = 1,
     length = statics.length;
     i < length; i++
@@ -136,7 +166,7 @@ function upgrade(statics) {
         escape);
   }
   vipers.set(this, viper);
-  return update.apply(viper, arguments);
+  return viperHTML.apply(this, arguments);
 }
 
 // -------------------------
